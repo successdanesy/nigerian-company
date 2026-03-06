@@ -17,32 +17,22 @@ interface Company {
 function extractCleanAddress(text: string): string {
   let cleaned = text;
 
-  cleaned = cleaned.replace(/\s+is\s+(?:headquartered|located)\s+(?:in|at)\s+/i, " ");
+  const addressMatch = cleaned.match(/\b(\d+[^.]*?(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Lane|Building|House)[^.]*?)(?:\s+Contact|\s+Tel|\s+Phone|\s+Email|\s+and\s+\+|\.)/i);
 
-  cleaned = cleaned.replace(/\.\s+Contact\s+(?:details|information|number)[^.]*$/i, "");
-  cleaned = cleaned.replace(/\.\s+(?:Tel|Phone|Email|Website)[^.]*$/i, "");
-  cleaned = cleaned.replace(/\s+Contact\s+(?:details|number|information)[^.]*$/i, "");
-  cleaned = cleaned.replace(/\s+\+\d+\s+\d+\s+\d+\s+\d+.*$/i, "");
-  cleaned = cleaned.replace(/\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/i, "");
-  cleaned = cleaned.replace(/\s+and\s+\+\d+.*$/i, "");
-  cleaned = cleaned.replace(/\s+(?:The office|Nigeria office)[^.]*at\s+/i, " ");
-
-  const addressMatch = cleaned.match(/(\d+[^,]*(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Lane|Building|House)[^.]*)/i);
   if (addressMatch) {
     let addr = addressMatch[1].trim();
-    addr = addr.replace(/\s+(?:Contact|Tel|Phone|Email|Website|Operating|Open)[^.]*$/i, "").trim();
-    addr = addr.replace(/\s+\+\d+.*$/i, "").trim();
-    addr = addr.replace(/\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/i, "").trim();
+    addr = addr.replace(/\s*,\s*/, ", ").trim();
     return addr;
   }
 
-  cleaned = cleaned.split(/\.\s+/)[0].trim();
-  cleaned = cleaned.replace(/^[^A-Z0-9]*/, "").trim();
-  cleaned = cleaned.replace(/\s+(?:Contact|Tel|Phone|Email|Website|Operating|Open)[^.]*$/i, "").trim();
-  cleaned = cleaned.replace(/\s+\+\d+.*$/i, "").trim();
-  cleaned = cleaned.replace(/\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/i, "").trim();
+  cleaned = cleaned.split(/(?:\.\s+Contact|\.\s+Tel|Contact\s+(?:details|number)|and\s+\+\d)/i)[0].trim();
 
-  return cleaned;
+  const streetMatch = cleaned.match(/(\d+[^.]*?(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Lane|Building|House)[^.]*)/i);
+  if (streetMatch) {
+    return streetMatch[1].trim();
+  }
+
+  return cleaned.substring(0, 150).trim();
 }
 
 async function searchCompanyInfo(companyName: string, tavilyApiKey: string): Promise<{ address: string; state: string }> {
