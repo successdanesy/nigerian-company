@@ -14,9 +14,44 @@ interface Company {
   original_state: string;
 }
 
+function extractCleanAddress(text: string): string {
+  const addressPatterns = [
+    /(?:Address:|Located at:|Office:|Headquarters:)\s*([^.]+(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Zone|Floor|Building|House|Lane)[^.]*)/i,
+    /(\d+[^.]*(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Zone|Floor|Building|House|Lane)[^.]*)/i,
+    /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Zone)[^,.]*(?:,\s*[^,.]+)*)/,
+  ];
+
+  for (const pattern of addressPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      let addr = match[1] || match[0];
+      addr = addr.replace(/^(?:Address:|Located at:|Office:|Headquarters:)\s*/i, "").trim();
+      addr = addr.replace(/\s*(?:Contact|Tel|Phone|Email|Website|Operating|Open|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[^.]*$/i, "").trim();
+      addr = addr.replace(/\s*\+?\d{3}[\s-]?\d{3}[\s-]?\d{4}.*$/g, "").trim();
+      addr = addr.replace(/\s*[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/g, "").trim();
+      addr = addr.replace(/\s*(?:from|operates|open)\s+\d+[AP]M.*$/i, "").trim();
+      addr = addr.replace(/[,;]\s*$/, "").trim();
+
+      if (addr.length > 15 && addr.length < 200) {
+        return addr;
+      }
+    }
+  }
+
+  let cleaned = text.split(/\.\s+/)[0];
+  cleaned = cleaned.replace(/^[^A-Z0-9]*/, "").trim();
+  cleaned = cleaned.replace(/\s*(?:Contact|Tel|Phone|Email|Website|Operating|Open|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[^.]*$/i, "").trim();
+  cleaned = cleaned.replace(/\s*\+?\d{3}[\s-]?\d{3}[\s-]?\d{4}.*$/g, "").trim();
+  cleaned = cleaned.replace(/\s*[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/g, "").trim();
+  cleaned = cleaned.replace(/\s*(?:from|operates|open)\s+\d+[AP]M.*$/i, "").trim();
+  cleaned = cleaned.replace(/[,;]\s*$/, "").trim();
+
+  return cleaned;
+}
+
 async function searchCompanyInfo(companyName: string, tavilyApiKey: string): Promise<{ address: string; state: string }> {
   try {
-    const searchQuery = `"${companyName}" Nigeria office address street location contact`;
+    const searchQuery = `"${companyName}" Nigeria office address street location`;
 
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
@@ -38,27 +73,28 @@ async function searchCompanyInfo(companyName: string, tavilyApiKey: string): Pro
 
     const data = await response.json();
 
-    let address = "";
+    let rawAddress = "";
     let state = "";
 
     if (data.answer) {
-      address = data.answer.trim();
+      rawAddress = data.answer.trim();
     } else if (data.results && data.results.length > 0) {
       for (const result of data.results) {
         const content = result.content || "";
         if (content.length > 50) {
-          address = content;
+          rawAddress = content;
           break;
         }
       }
     }
 
-    if (!address && data.results && data.results.length > 0) {
-      address = data.results[0].content || "";
+    if (!rawAddress && data.results && data.results.length > 0) {
+      rawAddress = data.results[0].content || "";
     }
 
-    address = address.replace(new RegExp(`^${companyName}\\s*[,:-]*\\s*`, "i"), "").trim();
-    address = address.split("\n")[0].trim();
+    rawAddress = rawAddress.replace(new RegExp(`^${companyName}\\s*[,:-]*\\s*`, "i"), "").trim();
+
+    let address = extractCleanAddress(rawAddress);
 
     const nigerianStates = [
       "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
