@@ -15,36 +15,32 @@ interface Company {
 }
 
 function extractCleanAddress(text: string): string {
-  const addressPatterns = [
-    /(?:Address:|Located at:|Office:|Headquarters:)\s*([^.]+(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Zone|Floor|Building|House|Lane)[^.]*)/i,
-    /(\d+[^.]*(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Zone|Floor|Building|House|Lane)[^.]*)/i,
-    /([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\s+(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Zone)[^,.]*(?:,\s*[^,.]+)*)/,
-  ];
+  let cleaned = text;
 
-  for (const pattern of addressPatterns) {
-    const match = text.match(pattern);
-    if (match) {
-      let addr = match[1] || match[0];
-      addr = addr.replace(/^(?:Address:|Located at:|Office:|Headquarters:)\s*/i, "").trim();
-      addr = addr.replace(/\s*(?:Contact|Tel|Phone|Email|Website|Operating|Open|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[^.]*$/i, "").trim();
-      addr = addr.replace(/\s*\+?\d{3}[\s-]?\d{3}[\s-]?\d{4}.*$/g, "").trim();
-      addr = addr.replace(/\s*[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/g, "").trim();
-      addr = addr.replace(/\s*(?:from|operates|open)\s+\d+[AP]M.*$/i, "").trim();
-      addr = addr.replace(/[,;]\s*$/, "").trim();
+  cleaned = cleaned.replace(/\s+is\s+(?:headquartered|located)\s+(?:in|at)\s+/i, " ");
 
-      if (addr.length > 15 && addr.length < 200) {
-        return addr;
-      }
-    }
+  cleaned = cleaned.replace(/\.\s+Contact\s+(?:details|information|number)[^.]*$/i, "");
+  cleaned = cleaned.replace(/\.\s+(?:Tel|Phone|Email|Website)[^.]*$/i, "");
+  cleaned = cleaned.replace(/\s+Contact\s+(?:details|number|information)[^.]*$/i, "");
+  cleaned = cleaned.replace(/\s+\+\d+\s+\d+\s+\d+\s+\d+.*$/i, "");
+  cleaned = cleaned.replace(/\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/i, "");
+  cleaned = cleaned.replace(/\s+and\s+\+\d+.*$/i, "");
+  cleaned = cleaned.replace(/\s+(?:The office|Nigeria office)[^.]*at\s+/i, " ");
+
+  const addressMatch = cleaned.match(/(\d+[^,]*(?:Street|Road|Avenue|Way|Crescent|Close|Drive|Boulevard|Plaza|Complex|District|Area|Lane|Building|House)[^.]*)/i);
+  if (addressMatch) {
+    let addr = addressMatch[1].trim();
+    addr = addr.replace(/\s+(?:Contact|Tel|Phone|Email|Website|Operating|Open)[^.]*$/i, "").trim();
+    addr = addr.replace(/\s+\+\d+.*$/i, "").trim();
+    addr = addr.replace(/\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/i, "").trim();
+    return addr;
   }
 
-  let cleaned = text.split(/\.\s+/)[0];
+  cleaned = cleaned.split(/\.\s+/)[0].trim();
   cleaned = cleaned.replace(/^[^A-Z0-9]*/, "").trim();
-  cleaned = cleaned.replace(/\s*(?:Contact|Tel|Phone|Email|Website|Operating|Open|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)[^.]*$/i, "").trim();
-  cleaned = cleaned.replace(/\s*\+?\d{3}[\s-]?\d{3}[\s-]?\d{4}.*$/g, "").trim();
-  cleaned = cleaned.replace(/\s*[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/g, "").trim();
-  cleaned = cleaned.replace(/\s*(?:from|operates|open)\s+\d+[AP]M.*$/i, "").trim();
-  cleaned = cleaned.replace(/[,;]\s*$/, "").trim();
+  cleaned = cleaned.replace(/\s+(?:Contact|Tel|Phone|Email|Website|Operating|Open)[^.]*$/i, "").trim();
+  cleaned = cleaned.replace(/\s+\+\d+.*$/i, "").trim();
+  cleaned = cleaned.replace(/\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}.*$/i, "").trim();
 
   return cleaned;
 }
